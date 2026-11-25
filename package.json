@@ -1,0 +1,12 @@
+{
+  "name": "chat-products-tester",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone test page for POST /rest/V1/chatbot/chat-products",
+  "scripts": {
+    "start": "node dev-server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

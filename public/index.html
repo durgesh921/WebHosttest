@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Chat Products API Tester</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --text:#1d2330; --muted:#667085; --line:#d9dde5; --accent:#2f5bea; --ok:#167a3e; --bad:#b42318; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); font-size:15px; }
+  header { background:var(--text); color:#fff; padding:14px 16px; }
+  header h1 { margin:0; font-size:17px; }
+  header p { margin:4px 0 0; font-size:12px; opacity:.75; }
+  main { max-width:860px; margin:0 auto; padding:12px; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:12px; }
+  h2 { font-size:14px; margin:0 0 10px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:10px; }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:3px; }
+  label code { color:var(--text); }
+  input { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:7px; font-size:15px; background:#fff; color:var(--text); }
+  input:focus { outline:2px solid var(--accent); outline-offset:-1px; border-color:transparent; }
+  .hint { font-size:12px; color:var(--muted); margin:6px 0 0; }
+  .row { display:flex; gap:8px; margin-bottom:8px; }
+  .row input { flex:1; }
+  button { border:0; border-radius:7px; padding:10px 14px; font-size:15px; cursor:pointer; background:#e8ebf2; color:var(--text); }
+  button.primary { background:var(--accent); color:#fff; font-weight:600; }
+  button:disabled { opacity:.5; cursor:default; }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; position:sticky; bottom:0; background:var(--bg); padding:10px 0; }
+  .actions .primary { flex:1; min-width:140px; }
+  pre { background:#0f1420; color:#d6e2ff; padding:10px; border-radius:7px; overflow:auto; font-size:12px; max-height:360px; margin:0; white-space:pre-wrap; word-break:break-word; }
+  .status { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:13px; margin-bottom:10px; }
+  .badge { font-weight:700; padding:2px 8px; border-radius:20px; color:#fff; }
+  .badge.ok { background:var(--ok); } .badge.bad { background:var(--bad); }
+  .msg { padding:9px 10px; border-radius:7px; background:#fff6e0; border:1px solid #f2d38b; margin-bottom:10px; font-size:14px; }
+  .err { background:#fdecea; border-color:#f3b4ad; color:var(--bad); }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
+  .p { border:1px solid var(--line); border-radius:9px; overflow:hidden; background:#fff; font-size:13px; }
+  .p .img { aspect-ratio:1; background:#eef0f4; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:12px; }
+  .p img { width:100%; height:100%; object-fit:cover; display:block; }
+  .p .b { padding:8px; }
+  .p .n { font-weight:600; margin-bottom:4px; }
+  .p .m { color:var(--muted); font-size:12px; word-break:break-all; }
+  .brand { display:flex; align-items:center; gap:6px; margin-top:4px; font-size:12px; }
+  .brand img { width:20px; height:20px; border-radius:50%; object-fit:cover; }
+  .pager { display:flex; justify-content:space-between; align-items:center; margin-top:12px; gap:8px; }
+  details summary { cursor:pointer; font-size:13px; color:var(--accent); margin:10px 0 6px; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Chat Products API Tester</h1>
+  <p>POST /rest/V1/chatbot/chat-products &middot; test tool only</p>
+</header>
+<main>
+  <form id="form" autocomplete="off">
+    <section>
+      <h2>Server</h2>
+      <div class="grid">
+        <div style="grid-column:1/-1">
+          <label for="baseUrl">Base URL <b>(required)</b></label>
+          <input id="baseUrl" type="url" inputmode="url" placeholder="https://your-domain" required>
+          <p class="hint">Type the site's base URL. The page adds <code>/rest/V1/chatbot/chat-products</code>.</p>
+        </div>
+        <div>
+          <label for="storeCode">Store code (optional)</label>
+          <input id="storeCode" placeholder="e.g. default">
+          <p class="hint">If set, calls <code>/rest/&lt;store&gt;/V1/...</code></p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>searchQuery</h2>
+      <p class="hint" style="margin:0 0 10px">Fill any fields; empty ones are not sent. Labels must match admin option labels (case-insensitive).</p>
+      <div class="grid" id="known"></div>
+      <div class="grid" style="margin-top:10px">
+        <div><label for="priceMin"><code>price.min</code> (₹)</label><input id="priceMin" type="number" inputmode="decimal" min="0"></div>
+        <div><label for="priceMax"><code>price.max</code> (₹)</label><input id="priceMax" type="number" inputmode="decimal" min="0"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Extra searchQuery keys</h2>
+      <div id="custom"></div>
+      <button type="button" id="addRow">+ Add key</button>
+      <p class="hint">For keys not listed above. Values like <code>123</code>, <code>true</code> or <code>{"min":1}</code> are sent as JSON; anything else as text.</p>
+    </section>
+
+    <section>
+      <h2>Paging</h2>
+      <div class="grid">
+        <div><label for="pageSize"><code>pageSize</code> (1–100)</label><input id="pageSize" type="number" inputmode="numeric" min="1" max="100" value="20"></div>
+        <div><label for="page"><code>page</code></label><input id="page" type="number" inputmode="numeric" min="1" value="1"></div>
+      </div>
+      <details>
+        <summary>Request body preview</summary>
+        <pre id="preview"></pre>
+      </details>
+    </section>
+
+    <div class="actions">
+      <button type="submit" class="primary" id="send">Send request</button>
+      <button type="button" id="clear">Clear filters</button>
+    </div>
+  </form>
+
+  <section id="result" class="hidden">
+    <h2>Response</h2>
+    <div class="status" id="status"></div>
+    <div id="notice"></div>
+    <div class="cards" id="cards"></div>
+    <div class="pager hidden" id="pager">
+      <button type="button" id="prev">&larr; Prev</button>
+      <span id="pageInfo"></span>
+      <button type="button" id="next">Next &rarr;</button>
+    </div>
+    <details>
+      <summary>Raw JSON response</summary>
+      <pre id="raw"></pre>
+    </details>
+  </section>
+</main>
+
+<script>
+const KNOWN = [
+  ['category', 'Category name, e.g. Rings'],
+  ['categoryId', 'Numeric id (overrides category)'],
+  ['metalType', 'e.g. Gold'],
+  ['productType', 'Jewellery type label'],
+  ['gender', 'e.g. Women'],
+  ['brand', 'Brand label'],
+  ['gemstone', 'Gemstone label'],
+  ['occasion', 'e.g. Wedding'],
+  ['relationship', 'e.g. Wife'],
+  ['name', 'Partial name'],
+  ['sku', 'Partial SKU'],
+];
+
+const $ = (id) => document.getElementById(id);
+const known = $('known');
+KNOWN.forEach(([key, hint]) => {
+  const div = document.createElement('div');
+  div.innerHTML = `<label for="q_${key}"><code>${key}</code></label><input id="q_${key}" data-key="${key}" placeholder="${hint}">`;
+  known.appendChild(div);
+});
+
+function addRow(key = '', value = '') {
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML = '<input class="ck" placeholder="key"><input class="cv" placeholder="value"><button type="button" aria-label="Remove">✕</button>';
+  row.querySelector('.ck').value = key;
+  row.querySelector('.cv').value = value;
+  row.querySelector('button').onclick = () => { row.remove(); updatePreview(); };
+  $('custom').appendChild(row);
+}
+$('addRow').onclick = () => addRow();
+
+function parseValue(v) {
+  const t = v.trim();
+  if (/^(-?\d+(\.\d+)?|true|false|null)$/.test(t) || /^[\[{]/.test(t)) {
+    try { return JSON.parse(t); } catch (e) { /* fall through to text */ }
+  }
+  return t;
+}
+
+function buildPayload() {
+  const searchQuery = {};
+  known.querySelectorAll('input').forEach((el) => {
+    const v = el.value.trim();
+    if (v) searchQuery[el.dataset.key] = el.dataset.key === 'categoryId' && /^\d+$/.test(v) ? Number(v) : v;
+  });
+  const price = {};
+  if ($('priceMin').value !== '') price.min = Number($('priceMin').value);
+  if ($('priceMax').value !== '') price.max = Number($('priceMax').value);
+  if (Object.keys(price).length) searchQuery.price = price;
+  $('custom').querySelectorAll('.row').forEach((row) => {
+    const k = row.querySelector('.ck').value.trim();
+    const v = row.querySelector('.cv').value;
+    if (k && v.trim() !== '') searchQuery[k] = parseValue(v);
+  });
+  const payload = { searchQuery };
+  if ($('pageSize').value !== '') payload.pageSize = Number($('pageSize').value);
+  if ($('page').value !== '') payload.page = Number($('page').value);
+  return payload;
+}
+
+function updatePreview() {
+  $('preview').textContent = JSON.stringify(buildPayload(), null, 2);
+}
+$('form').addEventListener('input', updatePreview);
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function safeUrl(u) {
+  return typeof u === 'string' && /^https?:\/\//i.test(u) ? esc(u) : '';
+}
+
+function render(data) {
+  $('result').classList.remove('hidden');
+  const body = data.body;
+  const ok = typeof data.status === 'number' && data.status >= 200 && data.status < 300;
+
+  $('status').innerHTML = [
+    data.status !== undefined ? `<span class="badge ${ok ? 'ok' : 'bad'}">HTTP ${esc(data.status)} ${esc(data.statusText || '')}</span>` : '<span class="badge bad">No response</span>',
+    data.timeMs !== undefined ? `<span>${esc(data.timeMs)} ms</span>` : '',
+    data.target ? `<span style="word-break:break-all">${esc(data.target)}</span>` : '',
+  ].join('');
+
+  let notice = '';
+  if (data.relayError) notice = `<div class="msg err">${esc(data.relayError)}</div>`;
+  else if (body && !ok && body.message) notice = `<div class="msg err">${esc(body.message)}</div>`;
+  else if (body && body.message) notice = `<div class="msg">${esc(body.message)}</div>`;
+  else if (body === null && data.rawText !== undefined) notice = '<div class="msg err">Response was not JSON (see raw response).</div>';
+  if (ok && body && typeof body.total_count === 'number') {
+    notice += `<p class="hint" style="margin:0 0 10px">total_count: <b>${esc(body.total_count)}</b> &middot; page ${esc(body.current_page)} of ${esc(body.total_pages)} &middot; page_size ${esc(body.page_size)}</p>`;
+  }
+  $('notice').innerHTML = notice;
+
+  const products = ok && body && Array.isArray(body.products) ? body.products : [];
+  $('cards').innerHTML = products.map((p) => {
+    const img = safeUrl(p.image);
+    const logo = safeUrl(p.brand_logo_url);
+    return `<div class="p">
+      <div class="img">${img ? `<img src="${img}" alt="" loading="lazy">` : 'no image'}</div>
+      <div class="b">
+        <div class="n">${esc(p.name)}</div>
+        <div class="m">SKU ${esc(p.sku)} &middot; id ${esc(p.id)}</div>
+        ${p.purity ? `<div class="m">${esc(p.purity)}</div>` : ''}
+        <div class="brand">${logo ? `<img src="${logo}" alt="">` : ''}<span>${esc(p.brand_name || 'no brand')}${p.brand_id ? ' (#' + esc(p.brand_id) + ')' : ''}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const pages = ok && body ? Number(body.total_pages) : 0;
+  const cur = ok && body ? Number(body.current_page) : 0;
+  $('pager').classList.toggle('hidden', !(pages > 1));
+  $('pageInfo').textContent = pages > 1 ? `Page ${cur} / ${pages}` : '';
+  $('prev').disabled = cur <= 1;
+  $('next').disabled = cur >= pages;
+
+  $('raw').textContent = body !== null && body !== undefined
+    ? JSON.stringify(body, null, 2)
+    : (data.rawText !== undefined ? data.rawText : JSON.stringify(data, null, 2));
+}
+
+async function send() {
+  const baseUrl = $('baseUrl').value.trim();
+  if (!baseUrl) { $('baseUrl').focus(); return; }
+  const btn = $('send');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    const res = await fetch('/api/chat-products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ baseUrl, storeCode: $('storeCode').value.trim(), payload: buildPayload() }),
+    });
+    let data;
+    try { data = await res.json(); } catch (e) { data = { relayError: `Relay returned HTTP ${res.status} without JSON.` }; }
+    render(data);
+  } catch (e) {
+    render({ relayError: 'Could not reach the relay: ' + e.message });
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send request';
+    $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+$('form').addEventListener('submit', (e) => { e.preventDefault(); send(); });
+$('prev').onclick = () => { $('page').value = Math.max(1, Number($('page').value || 1) - 1); updatePreview(); send(); };
+$('next').onclick = () => { $('page').value = Number($('page').value || 1) + 1; updatePreview(); send(); };
+$('clear').onclick = () => {
+  known.querySelectorAll('input').forEach((el) => { el.value = ''; });
+  $('priceMin').value = ''; $('priceMax').value = '';
+  $('custom').innerHTML = '';
+  $('page').value = 1;
+  updatePreview();
+};
+
+updatePreview();
+</script>
+</body>
+</html>
